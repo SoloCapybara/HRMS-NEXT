@@ -25,6 +25,8 @@ import {
 import { getUserInfo } from '@/lib/user';
 import Cookies from 'js-cookie';
 import { css } from '@emotion/css';
+import { useAuth } from '@/hooks/useAuth';
+import { Spin } from 'antd';
 
 const { Header, Sider, Content } = Layout;
 
@@ -100,6 +102,11 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [userInfo, setUserInfo] = useState<any>({});
   const router = useRouter();
   const pathname = usePathname();
+  const { isAuthenticated, isLoading } = useAuth();
+
+
+  
+
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -115,6 +122,20 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     fetchUserInfo();
   }, []);
+
+
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+  
 
   const logout = () => {
     Cookies.remove('token');

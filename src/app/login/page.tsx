@@ -1,15 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from '@/lib/user';
 import Cookies from 'js-cookie';
 import { Form, Input, Button, Card, message } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
+import { useAuth } from '@/hooks/useAuth';
+import { Spin } from 'antd';
 
 const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   const onFinish = async (values: { employeeId: string; password: string }) => {
     setLoading(true);
@@ -35,6 +44,22 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return null; // 这将由 useEffect 钩子处理
+  }
+
+  // if (isLoading || isAuthenticated) {
+  //   return null; // 或者返回一个加载指示器
+  // }
 
   return (
     <div style={{ 
