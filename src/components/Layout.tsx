@@ -104,10 +104,6 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
 
-
-  
-
-
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
