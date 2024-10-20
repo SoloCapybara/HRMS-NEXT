@@ -58,14 +58,10 @@ const contentStyles = css`
   }
   .content-wrapper {
     background-color: #fff;
-    border-radius: 20px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
     transition: all 0.3s cubic-bezier(.25,.8,.25,1);
     overflow: hidden;
     box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-    // &:hover {
-    //   box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-    // }
   }
   .breadcrumb-container {
     padding: 12px 24px;
@@ -102,7 +98,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [userInfo, setUserInfo] = useState<any>({});
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, hasPermission, userRole } = useAuth();
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -119,7 +115,6 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     fetchUserInfo();
   }, []);
 
-
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
@@ -131,7 +126,6 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   if (!isAuthenticated) {
     return null;
   }
-  
 
   const logout = () => {
     Cookies.remove('token');
@@ -139,36 +133,40 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   const sideMenuItems = [
-    { key: 'home', icon: <HomeOutlined />, label: '系统首页', href: '/dashboard' },
-    { key: 'clockIn', icon: <ClockCircleOutlined />, label: '考勤打卡', href: '/attendance' },
-    { key: 'leaveRequest', icon: <CalendarOutlined />, label: '请假申请', href: '/leave-request' },
+    { key: 'home', icon: <HomeOutlined />, label: '系统首页', href: '/dashboard', permission: '系统首页' },
+    { key: 'clockIn', icon: <ClockCircleOutlined />, label: '考勤打卡', href: '/attendance', permission: '考勤打卡' },
+    { key: 'leaveRequest', icon: <CalendarOutlined />, label: '请假申请', href: '/leave-request', permission: '请假申请' },
   ];
 
-  if (userInfo.role === 1) {
-    sideMenuItems.push(
-      { key: 'announcementManagement', icon: <BellOutlined />, label: '公告管理', href: '/announcement-management' },
-      {
-        key: 'userManagement',
-        icon: <TeamOutlined />,
-        label: '用户管理',
-        children: [
-          { key: 'adminInfo', icon: <UserSwitchOutlined />, label: '管理员信息', href: '/admin-info' },
-          { key: 'empInfo', icon: <UserOutlined />, label: '员工信息', href: '/user-info' },
-          { key: 'empPwdManagement', icon: <KeyOutlined />, label: '员工密码管理', href: '/employee-password' },
-        ],
-      },
-      {
-        key: 'hrManagement',
-        icon: <FolderOutlined />,
-        label: '人事管理',
-        children: [
-          { key: 'departmentManagement', icon: <BuildOutlined />, label: '部门管理', href: '/department-management' },
-          { key: 'attendanceManagement', icon: <CheckSquareOutlined />, label: '考勤管理', href: '/attendance-management' },
-          { key: 'leaveApproval', icon: <CalendarOutlined />, label: '假期审批', href: '/approval/leave' },
-          { key: 'setCheckInTime', icon: <SettingOutlined />, label: '考勤设置', href: '/set-check-in-time' },
-        ],
-      }
-    );
+  if (userRole === '超级管理员' || hasPermission('公告管理')) {
+    sideMenuItems.push({ key: 'announcementManagement', icon: <BellOutlined />, label: '公告管理', href: '/announcement-management', permission: '公告管理' });
+  }
+
+  if (userRole === '超级管理员' || hasPermission('用户管理')) {
+    sideMenuItems.push({
+      key: 'userManagement',
+      icon: <TeamOutlined />,
+      label: '用户管理',
+      children: [
+        { key: 'adminInfo', icon: <UserSwitchOutlined />, label: '权限管理', href: '/admin-info', permission: '权限管理' },
+        { key: 'empInfo', icon: <UserOutlined />, label: '员工信息', href: '/user-info', permission: '员工信息' },
+        { key: 'empPwdManagement', icon: <KeyOutlined />, label: '员工密码管理', href: '/employee-password', permission: '员工密码管理' },
+      ],
+    });
+  }
+
+  if (userRole === '超级管理员' || hasPermission('人事管理')) {
+    sideMenuItems.push({
+      key: 'hrManagement',
+      icon: <FolderOutlined />,
+      label: '人事管理',
+      children: [
+        { key: 'departmentManagement', icon: <BuildOutlined />, label: '部门管理', href: '/department-management', permission: '部门管理' },
+        { key: 'attendanceManagement', icon: <CheckSquareOutlined />, label: '考勤管理', href: '/attendance-management', permission: '考勤管理' },
+        { key: 'leaveApproval', icon: <CalendarOutlined />, label: '假期审批', href: '/approval/leave', permission: '假期审批' },
+        { key: 'setCheckInTime', icon: <SettingOutlined />, label: '考勤设置', href: '/set-check-in-time', permission: '考勤设置' },
+      ],
+    });
   }
 
   const generateBreadcrumbItems = () => {
@@ -222,6 +220,31 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     }
   };
 
+  const renderMenuItem = (item: any) => {
+    if (userRole === '超级管理员' || hasPermission(item.permission)) {
+      return (
+        <Menu.Item key={item.key} icon={item.icon}>
+          <Link href={item.href}>{item.label}</Link>
+        </Menu.Item>
+      );
+    }
+    return null;
+  };
+
+  const renderSubMenu = (item: any) => {
+    if (item.children) {
+      const childItems = item.children.map(renderMenuItem).filter(Boolean);
+      if (childItems.length > 0) {
+        return (
+          <Menu.SubMenu key={item.key} icon={item.icon} title={item.label}>
+            {childItems}
+          </Menu.SubMenu>
+        );
+      }
+    }
+    return null;
+  };
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Sider trigger={null} collapsible collapsed={collapsed}>
@@ -234,19 +257,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           className={menuStyles}
         >
           {sideMenuItems.map((item) => 
-            item.children ? (
-              <Menu.SubMenu key={item.key} icon={item.icon} title={item.label}>
-                {item.children.map((child) => (
-                  <Menu.Item key={child.key} icon={child.icon}>
-                    <Link href={child.href}>{child.label}</Link>
-                  </Menu.Item>
-                ))}
-              </Menu.SubMenu>
-            ) : (
-              <Menu.Item key={item.key} icon={item.icon}>
-                <Link href={item.href}>{item.label}</Link>
-              </Menu.Item>
-            )
+            item.children ? renderSubMenu(item) : renderMenuItem(item)
           )}
         </Menu>
       </Sider>

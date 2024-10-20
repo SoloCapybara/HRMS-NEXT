@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { getUserInfo } from '@/lib/user';
@@ -6,36 +6,52 @@ import { getUserInfo } from '@/lib/user';
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [userRole, setUserRole] = useState('');
+  const [userPermissions, setUserPermissions] = useState<string[]>([]);
   const router = useRouter();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = Cookies.get('token');
-      if (!token) {
-        setIsAuthenticated(false);
-        setIsLoading(false);
-        return;
-      }
+  const checkAuth = useCallback(async () => {
+    const token = Cookies.get('token');
+    if (!token) {
+      setIsAuthenticated(false);
+      setUserRole('');
+      setUserPermissions([]);
+      setIsLoading(false);
+      return;
+    }
 
-      try {
-        const response = await getUserInfo();
-        if (response.data && response.data.code === 1) {
-          setIsAuthenticated(true);
+    try {
+      const response = await getUserInfo();
+      if (response.data && response.data.code === 1) {
+        setIsAuthenticated(true);
+        setUserRole(response.data.data.role);
+        // 如果是超级管理员，设置一个特殊的权限
+        if (response.data.data.role === '超级管理员') {
+          setUserPermissions(['ALL']);
         } else {
-          setIsAuthenticated(false);
-          Cookies.remove('token');
+          // 对于其他角色，使用返回的权限或空数组
+          setUserPermissions(response.data.data.permissions || []);
         }
-      } catch (error) {
-        console.error('验证用户信息失败', error);
+      } else {
         setIsAuthenticated(false);
+        setUserRole('');
+        setUserPermissions([]);
         Cookies.remove('token');
       }
+    } catch (error) {
+      console.error('验证用户信息失败', error);
+      setIsAuthenticated(false);
+      setUserRole('');
+      setUserPermissions([]);
+      Cookies.remove('token');
+    }
 
-      setIsLoading(false);
-    };
-
-    checkAuth();
+    setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -47,5 +63,9 @@ export const useAuth = () => {
     }
   }, [isAuthenticated, isLoading, router]);
 
-  return { isAuthenticated, isLoading };
+  const hasPermission = useCallback((requiredPermission: string) => {
+    return userRole === '超级管理员' || userPermissions.includes(requiredPermission);
+  }, [userRole, userPermissions]);
+
+  return { isAuthenticated, isLoading, userRole, userPermissions, checkAuth, hasPermission };
 };
