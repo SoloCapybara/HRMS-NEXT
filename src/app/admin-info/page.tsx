@@ -63,6 +63,7 @@ const RoleManagementPage = () => {
     setLoading(true);
     try {
       const response = await fetchRoles();
+      console.log(response)
       if (response.data && response.data.code === 1) {
         const rolesData = response.data.data.roles;
         const permissionsData = response.data.data.permissions;

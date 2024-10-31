@@ -14,7 +14,7 @@ export const getUserInfo = () => {
   return apiClient.get('/getEmpInfo/personal');
 };
 
-// 用户修改个人信息
+// 用户修改自己信息
 export const updateUserInfo = (userInfo: {
   gender: string;
   age: number;
@@ -34,13 +34,13 @@ export const updateEmployeeProfile = (
   employeeId: string,
   department: number,
   position: number,
-  role: number
+  roleId: number
 ) => {
   return apiClient.patch('/updateProfile', {
     employeeId,
     department,
     position,
-    role
+    roleId
   });
 };
 
@@ -66,6 +66,16 @@ export const deleteEmployees = (employeeIds: string[]) => {
 };
 
 // 添加新员工
-export const addEmployee = (employeeData: any) => {
+export const addEmployee = (employeeData: {
+  employeeId: string;
+  username: string;
+  gender: number;
+  age: number;
+  phoneNumber: string;
+  email: string;
+  department: number;
+  position: number;
+  roleId: number;
+}) => {
   return apiClient.post('/addEmployee', employeeData);
 };

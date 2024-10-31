@@ -11,10 +11,12 @@ import {
 } from '@ant-design/icons';
 import { 
   fetchEmployeeData, updateEmployeeProfile, deleteEmployees, 
-  addEmployee, getUserInfo 
+  addEmployee, getUserInfo
 } from '@/lib/user';
 import { getAllDepartments } from '@/lib/departments';
 import Layout from '@/components/Layout';
+import { RollerShades } from '@mui/icons-material';
+import { fetchRoles } from '@/lib/role';
 
 const { Option } = Select;
 
@@ -31,16 +33,19 @@ const UserInfoPage = () => {
   const [form] = Form.useForm();
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [roles, setRoles] = useState([]); 
 
   useEffect(() => {
-    loadDepartments();
-    loadUsers();
-    loadCurrentUser();
+    loadDepartments(); //所有部门
+    loadUsers(); //所有用户
+    loadCurrentUser(); //当前用户
+    loadRoles(); // 加载角色
   }, []);
 
   const loadCurrentUser = async () => {
     try {
       const response = await getUserInfo();
+      console.log(response)
       if (response.data && response.data.code === 1) {
         setCurrentUser(response.data.data);
       } else {
@@ -84,6 +89,22 @@ const UserInfoPage = () => {
     }
   };
 
+  const loadRoles = async () => {
+    try {
+      const response = await fetchRoles();
+      console.log(response)
+      if (response.data && response.data.code === 1) {
+        const rolesData = response.data.data.roles || [];
+        setRoles(rolesData);
+      } else {
+        message.error('获取角色数据失败');
+      }
+    } catch (error) {
+      console.error("获取角色数据失败", error);
+      message.error('获取角色数据失败，请检查网络或联系管理员');
+    }
+  };
+
   const handleSearch = () => {
     const filteredUsers = allUsers.filter(user => 
       (user.employeeId.includes(searchKeyword) || user.username.includes(searchKeyword)) &&
@@ -101,11 +122,14 @@ const UserInfoPage = () => {
   const showModal = (mode, user = null) => {
     setModalMode(mode);
     setEditingUser(user);
+    form.resetFields();
     if (mode === 'edit' && user) {
+      // 找到对应的角色ID
+      const roleObj = roles.find(r => r.name === user.role);
       form.setFieldsValue({
         department: user.department,
         position: user.position,
-        role: user.role
+        roleId: roleObj?.id 
       });
     } else {
       form.resetFields();
@@ -125,13 +149,23 @@ const UserInfoPage = () => {
 
   const handleAddUser = async (values) => {
     try {
-      const response = await addEmployee({ 
-        ...values, 
-        role: 0,
+      // 构造请求数据
+      const employeeData = {
+        employeeId: values.employeeId,
+        username: values.username,
         gender: parseInt(values.gender),
+        age: parseInt(values.age),
+        phoneNumber: values.phoneNumber,
+        email: values.email,
         department: parseInt(values.department),
-        age: parseInt(values.age)
-      });
+        position: parseInt(values.position),
+        roleId: parseInt(values.roleId)
+      };
+  
+      console.log('添加用户数据:', employeeData); // 调试用
+  
+      const response = await addEmployee(employeeData);
+      
       if (response.data && response.data.code === 1) {
         message.success('添加用户成功');
         setModalVisible(false);
@@ -161,14 +195,14 @@ const UserInfoPage = () => {
         employeeId: editingUser.employeeId,
         department: parseInt(values.department),
         position: parseInt(values.position),
-        role: parseInt(values.role)
+        roleId: parseInt(values.roleId)
       };
       
       const response = await updateEmployeeProfile(
         updatedValues.employeeId,
         updatedValues.department,
         updatedValues.position,
-        updatedValues.role
+        updatedValues.roleId
       );
       
       if (response.data && response.data.code === 1) {
@@ -183,7 +217,6 @@ const UserInfoPage = () => {
       message.error('更新用户信息失败: ' + error.message);
     }
   };
-
   const handleDelete = async (employeeId) => {
     try {
       if (!currentUser) {
@@ -220,7 +253,6 @@ const UserInfoPage = () => {
       return;
     }
 
-    // 检查是否包含当前用户
     if (selectedRowKeys.includes(currentUser.employeeId)) {
       message.error('不能删除自己的信息');
       return;
@@ -245,7 +277,7 @@ const UserInfoPage = () => {
     selectedRowKeys,
     onChange: (newSelectedRowKeys) => setSelectedRowKeys(newSelectedRowKeys),
     getCheckboxProps: (record) => ({
-      disabled: record.employeeId === currentUser?.employeeId, // 禁用当前用户的选择框
+      disabled: record.employeeId === currentUser?.employeeId,
       name: record.username,
     }),
   };
@@ -273,10 +305,10 @@ const UserInfoPage = () => {
     },
     { title: '职位', dataIndex: 'position', key: 'position' },
     { 
-      title: '账号权限', 
+      title: '账号角色', 
       dataIndex: 'role', 
       key: 'role',
-      render: (role) => role === 1 ? '管理员' : '普通用户'
+      render: (role) => role || '未知角色' 
     },
     {
       title: '操作',
@@ -347,12 +379,13 @@ const UserInfoPage = () => {
           loading={loading}
         />
       </Card>
-
       <Modal
         title={modalMode === 'add' ? '添加员工' : '编辑员工'}
         open={modalVisible}
         onOk={handleModalOk}
         onCancel={() => setModalVisible(false)}
+        width={800} // 设置模态框宽度
+        style={{ top: 20 }} // 设置模态框位置
       >
         <Form
           form={form}
@@ -436,18 +469,34 @@ const UserInfoPage = () => {
           >
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
-          {modalMode === 'edit' && (
-            <Form.Item
-              name="role"
-              label="账号权限"
+          <Form.Item
+              name="roleId"
+              label="账号角色"
               rules={[{ required: true, message: '请选择账号权限' }]}
             >
               <Select>
-                <Option value={0}>普通用户</Option>
-                <Option value={1}>管理员</Option>
+                {Array.isArray(roles) && roles.map(role => (
+                  <Option key={role.id} value={role.id}>
+                    {role.name}
+                  </Option>
+                ))}
               </Select>
             </Form.Item>
-          )}
+          {/* {modalMode === 'edit' && (
+            <Form.Item
+              name="roleId"
+              label="账号角色"
+              rules={[{ required: true, message: '请选择账号权限' }]}
+            >
+              <Select>
+                {Array.isArray(roles) && roles.map(role => (
+                  <Option key={role.id} value={role.id}>
+                    {role.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )} */}
         </Form>
       </Modal>
     </Layout>
