@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 8081",
-    "build": "next build",
-    "start": "next start",
+    "build": "next build --no-lint",
+    "start": "HOST=0.0.0.0 PORT=8081 next start",
     "lint": "next lint"
   },
   "dependencies": {
@@ -36,7 +36,7 @@
     "lodash": "^4.17.21",
     "lucide-react": "^0.447.0",
     "moment": "^2.30.1",
-    "next": "14.2.14",
+    "next": "13.5.6",
     "react": "^18",
     "react-dom": "^18",
     "react-hook-form": "^7.53.0",

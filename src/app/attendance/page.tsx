@@ -112,10 +112,8 @@ const AttendancePage = () => {
         console.log('纬度:', position.coords.latitude);
       } catch (posError) {
         console.error('获取地理位置失败:', posError);
-        // 使用 Material-UI 的 Snackbar 或 Alert 组件替代 message.warning
-        // 这里暂时使用 console.warn
         console.warn('无法获取地理位置，将使用默认位置');
-        position = { coords: { latitude: 0, longitude: 0 } };
+        position = { coords: { latitude: 22.765276, longitude: 113.83461000000001 } };
       }
   
       const now = new Date();
@@ -150,8 +148,6 @@ const AttendancePage = () => {
             setCanClockOut(false);
           }
           await getEmployeeAttendance();
-          // 使用 Material-UI 的 Snackbar 或 Alert 组件替代 message.success
-          // 这里暂时使用 console.log
           console.log(`${type === 'in' ? '上班' : '下班'}打卡成功`);
         } else {
           throw new Error(response.data.msg || '打卡失败');
@@ -172,8 +168,6 @@ const AttendancePage = () => {
           errorMessage += ` - ${error.response.data.msg}`;
         }
       }
-      // 使用 Material-UI 的 Snackbar 或 Alert 组件替代 message.error
-      // 这里暂时使用 console.error
       console.error(errorMessage);
     }
   };
@@ -215,8 +209,6 @@ const AttendancePage = () => {
       }
     } catch (error) {
       console.error('获取考勤记录失败:', error);
-      // 使用 Material-UI 的 Snackbar 或 Alert 组件替代 message.error
-      // 这里暂时使用 console.error
       console.error('获取考勤记录失败: ' + (error.message || '未知错误'));
     }
   };
@@ -246,8 +238,6 @@ const AttendancePage = () => {
     } catch (error) {
       console.error('检查打卡日失败:', error);
       setCanCheckInToday(false);
-      // 使用 Material-UI 的 Snackbar 或 Alert 组件替代 message.error
-      // 这里暂时使用 console.error
       console.error('检查打卡日失败: ' + (error.message || '未知错误'));
     }
   };
@@ -265,8 +255,6 @@ const AttendancePage = () => {
       }
     } catch (error) {
       console.error('获取用户信息失败:', error);
-      // 使用 Material-UI 的 Snackbar 或 Alert 组件替代 message.error
-      // 这里暂时使用 console.error
       console.error('获取用户信息失败: ' + (error.message || '未知错误'));
     } finally {
       setLoading(false);

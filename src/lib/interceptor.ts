@@ -75,6 +75,6 @@ class ApiClient {
   }
 }
 
-const apiClient = new ApiClient('http://127.0.0.1:8080');
+const apiClient = new ApiClient('http://localhost:8080');
 
 export default apiClient;
